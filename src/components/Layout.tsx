@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, ListTodo, Lightbulb, CalendarDays, Bell, Menu } from 'lucide-react';
+import { LayoutDashboard, ListTodo, Lightbulb, CalendarDays, Bell, Menu, Video } from 'lucide-react';
 import { motion } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -32,6 +32,7 @@ export function TopBar() {
         <NavLink to="/activities" className={({ isActive }) => cn("text-sm font-medium transition-colors", isActive ? "text-primary" : "text-on-surface-variant hover:text-primary")}>Activities</NavLink>
         <NavLink to="/insights" className={({ isActive }) => cn("text-sm font-medium transition-colors", isActive ? "text-primary" : "text-on-surface-variant hover:text-primary")}>Insights</NavLink>
         <NavLink to="/planner" className={({ isActive }) => cn("text-sm font-medium transition-colors", isActive ? "text-primary" : "text-on-surface-variant hover:text-primary")}>Planner</NavLink>
+        <NavLink to="/frames-to-video" className={({ isActive }) => cn("text-sm font-medium transition-colors", isActive ? "text-primary" : "text-on-surface-variant hover:text-primary")}>Video</NavLink>
       </div>
 
       <button className="text-primary hover:opacity-80 transition-opacity active:scale-95">
@@ -47,6 +48,7 @@ export function BottomNav() {
     { to: '/activities', icon: ListTodo, label: 'Activities' },
     { to: '/insights', icon: Lightbulb, label: 'Insights' },
     { to: '/planner', icon: CalendarDays, label: 'Planner' },
+    { to: '/frames-to-video', icon: Video, label: 'Video' },
   ];
 
   return (

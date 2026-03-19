@@ -13,6 +13,8 @@ service cloud.firestore {
     //   - email: string (required)
     //   - photoURL: string
     //   - createdAt: timestamp
+    //   - isNewUser: bool
+    //   - role: string
     //
     // Collection: tasks
     // Document ID: taskId
@@ -66,8 +68,11 @@ service cloud.firestore {
 
     function isAdmin() {
       return isAuthenticated() &&
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
-          (request.auth.token.email == "likhithbellamkonda@gmail.com" && request.auth.token.email_verified == true));
+        (
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') ||
+          (request.auth.token.email == "likhithbellamkonda@gmail.com" && request.auth.token.email_verified == true)
+        );
     }
 
     function hasRequiredFields(fields) {
@@ -93,10 +98,11 @@ service cloud.firestore {
     // ===============================================================
 
     function isValidUser(data) {
-      return hasOnlyAllowedFields(['uid', 'displayName', 'email', 'photoURL', 'createdAt', 'role']) &&
+      return hasOnlyAllowedFields(['uid', 'displayName', 'email', 'photoURL', 'createdAt', 'role', 'isNewUser']) &&
              data.uid is string && data.uid == request.auth.uid &&
              data.email is string && data.email.size() > 0 &&
-             (data.role == 'user' || !('role' in data));
+             (data.role == 'user' || !('role' in data)) &&
+             (!( 'isNewUser' in data) || data.isNewUser is bool);
     }
 
     function isValidTask(data) {
@@ -109,23 +115,29 @@ service cloud.firestore {
              isValidOptionalString('duration', 50) &&
              isValidOptionalString('time', 20) &&
              (!( 'priority' in data) || data.priority in ['High', 'Normal', 'Urgent', 'Routine']) &&
-             (!( 'progress' in data) || (data.progress is number && data.progress >= 0 && data.progress <= 100));
+             (!( 'progress' in data) || (data.progress is number && data.progress >= 0 && data.progress <= 100)) &&
+             (!( 'createdAt' in data) || data.createdAt is timestamp);
     }
 
     function isValidInsight(data) {
       return hasRequiredFields(['userId', 'title', 'description', 'type']) &&
+             hasOnlyAllowedFields(['userId', 'title', 'description', 'type', 'action', 'createdAt']) &&
              data.userId == request.auth.uid &&
              data.title is string && data.title.size() < 200 &&
              data.description is string && data.description.size() < 1000 &&
-             data.type in ['productivity', 'alert', 'recommendation'];
+             data.type in ['productivity', 'alert', 'recommendation'] &&
+             isValidOptionalString('action', 100) &&
+             (!( 'createdAt' in data) || data.createdAt is timestamp);
     }
 
     function isValidPerformance(data) {
       return hasRequiredFields(['userId', 'day', 'value', 'type']) &&
+             hasOnlyAllowedFields(['userId', 'day', 'value', 'type', 'createdAt']) &&
              data.userId == request.auth.uid &&
              data.day is string && data.day.size() < 10 &&
              data.value is number && data.value >= 0 && data.value <= 100 &&
-             data.type in ['deep', 'routine'];
+             data.type in ['deep', 'routine'] &&
+             (!( 'createdAt' in data) || data.createdAt is timestamp);
     }
 
     // ===============================================================
@@ -139,21 +151,24 @@ service cloud.firestore {
     }
 
     match /tasks/{taskId} {
-      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow get: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow list: if isAuthenticated() && (isAdmin() || request.query.filters.userId == request.auth.uid);
       allow create: if isAuthenticated() && isValidTask(request.resource.data);
       allow update: if isAuthenticated() && isDocOwner() && isValidTask(request.resource.data);
       allow delete: if isAuthenticated() && isDocOwner();
     }
 
     match /insights/{insightId} {
-      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow get: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow list: if isAuthenticated() && (isAdmin() || request.query.filters.userId == request.auth.uid);
       allow create: if isAuthenticated() && isValidInsight(request.resource.data);
       allow update: if isAuthenticated() && isDocOwner() && isValidInsight(request.resource.data);
       allow delete: if isAuthenticated() && isDocOwner();
     }
 
     match /performance/{performanceId} {
-      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow get: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow list: if isAuthenticated() && (isAdmin() || request.query.filters.userId == request.auth.uid);
       allow create: if isAuthenticated() && isValidPerformance(request.resource.data);
       allow update: if isAuthenticated() && isDocOwner() && isValidPerformance(request.resource.data);
       allow delete: if isAuthenticated() && isDocOwner();

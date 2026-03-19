@@ -4,6 +4,7 @@ import Dashboard from './components/Dashboard';
 import Activities from './components/Activities';
 import Insights from './components/Insights';
 import Planner from './components/Planner';
+import FramesToVideo from './components/FramesToVideo';
 import { FirebaseProvider, useFirebase } from './context/FirebaseContext';
 import { LogIn } from 'lucide-react';
 
@@ -46,6 +47,7 @@ function AppContent() {
         <Route path="/activities" element={<Activities />} />
         <Route path="/insights" element={<Insights />} />
         <Route path="/planner" element={<Planner />} />
+        <Route path="/frames-to-video" element={<FramesToVideo />} />
       </Routes>
     </Layout>
   );
