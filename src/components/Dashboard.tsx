@@ -1,11 +1,32 @@
-import React from 'react';
-import { INITIAL_TASKS, INSIGHTS } from '../constants';
-import { Timer, TrendingUp, Check, PlayCircle, Brain, AlertTriangle } from 'lucide-react';
+import React, { useState } from 'react';
+import { useFirebase } from '../context/FirebaseContext';
+import { Timer, TrendingUp, Check, PlayCircle, Brain, AlertTriangle, Plus } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export default function Dashboard() {
+  const { user, tasks, insights, toggleTask, addTask } = useFirebase();
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
-  const progress = 72;
+  
+  const completedTasks = tasks.filter(t => t.completed).length;
+  const totalTasks = tasks.length;
+  const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  const remainingTasks = totalTasks - completedTasks;
+
+  const handleQuickAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTaskTitle.trim()) return;
+    await addTask({
+      title: newTaskTitle,
+      category: 'Quick Task',
+      duration: '15m',
+      priority: 'Normal',
+      completed: false,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
+    });
+    setNewTaskTitle('');
+  };
 
   return (
     <div className="space-y-12">
@@ -13,7 +34,7 @@ export default function Dashboard() {
       <section className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-1">
           <p className="text-xs uppercase tracking-[0.2em] text-on-surface-variant font-medium">{today}</p>
-          <h2 className="text-[3.5rem] font-extrabold leading-none tracking-tight text-on-surface font-display">Hello, Julian.</h2>
+          <h2 className="text-[3.5rem] font-extrabold leading-none tracking-tight text-on-surface font-display">Hello, {user?.displayName?.split(' ')[0] || 'User'}.</h2>
         </div>
         <div className="hidden md:block text-right pb-2">
           <p className="text-on-surface-variant text-sm max-w-xs italic">"The path to clarity begins with a single focused hour."</p>
@@ -27,10 +48,14 @@ export default function Dashboard() {
           <div className="absolute -top-24 -left-24 w-64 h-64 aurora-glow opacity-20 group-hover:opacity-30 transition-opacity"></div>
           <div className="relative z-10 space-y-4 text-center md:text-left">
             <h3 className="text-2xl font-bold text-on-surface">Daily Progress</h3>
-            <p className="text-on-surface-variant max-w-xs">You've completed 72% of your planned architecture sprint for today.</p>
+            <p className="text-on-surface-variant max-w-xs">
+              {totalTasks > 0 
+                ? `You've completed ${progress}% of your planned architecture sprint for today.`
+                : "Start your day by adding some tasks to your focus list."}
+            </p>
             <div className="flex gap-4 pt-2">
-              <div className="px-4 py-2 bg-surface-high rounded-full text-xs font-semibold tracking-wider text-primary">8/11 TASKS</div>
-              <div className="px-4 py-2 bg-surface-high rounded-full text-xs font-semibold tracking-wider text-on-surface-variant">3 REMAINING</div>
+              <div className="px-4 py-2 bg-surface-high rounded-full text-xs font-semibold tracking-wider text-primary">{completedTasks}/{totalTasks} TASKS</div>
+              <div className="px-4 py-2 bg-surface-high rounded-full text-xs font-semibold tracking-wider text-on-surface-variant">{remainingTasks} REMAINING</div>
             </div>
           </div>
           
@@ -51,7 +76,7 @@ export default function Dashboard() {
               </defs>
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-4xl font-extrabold text-on-surface">72%</span>
+              <span className="text-4xl font-extrabold text-on-surface">{progress}%</span>
               <span className="text-[10px] uppercase tracking-widest text-on-surface-variant font-bold">Flow State</span>
             </div>
           </div>
@@ -64,10 +89,13 @@ export default function Dashboard() {
             <h4 className="text-on-surface-variant font-medium text-sm pt-2">Focus Time</h4>
           </div>
           <div className="space-y-1">
-            <p className="text-5xl font-extrabold text-on-surface tracking-tighter">5.4<span className="text-xl text-on-surface-variant font-normal ml-1">h</span></p>
+            <p className="text-5xl font-extrabold text-on-surface tracking-tighter">
+              {(completedTasks * 0.75).toFixed(1)}
+              <span className="text-xl text-on-surface-variant font-normal ml-1">h</span>
+            </p>
             <p className="text-xs text-primary font-medium flex items-center gap-1">
               <TrendingUp size={14} />
-              12% from yesterday
+              Estimated based on tasks
             </p>
           </div>
         </div>
@@ -79,33 +107,52 @@ export default function Dashboard() {
         <div className="lg:col-span-3 space-y-6">
           <div className="flex items-center justify-between">
             <h3 className="text-xl font-bold tracking-tight">Today's Focus</h3>
-            <button className="text-primary text-sm font-semibold hover:underline">View All</button>
+            <form onSubmit={handleQuickAdd} className="flex-1 max-w-xs ml-4 relative">
+              <input
+                type="text"
+                value={newTaskTitle}
+                onChange={(e) => setNewTaskTitle(e.target.value)}
+                placeholder="Quick add task..."
+                className="w-full bg-surface-low border border-on-surface-variant/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary transition-all"
+              />
+              <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 text-primary hover:scale-110 transition-transform">
+                <Plus size={18} />
+              </button>
+            </form>
           </div>
           <div className="space-y-4">
-            {INITIAL_TASKS.slice(0, 3).map((task, index) => (
-              <div 
-                key={task.id} 
-                className={cn(
-                  "group transition-all p-6 rounded-2xl flex items-center gap-6",
-                  index === 1 ? "bg-surface-high border-l-4 border-primary shadow-xl relative overflow-hidden" : "bg-surface-low hover:bg-surface-high"
-                )}
-              >
-                {index === 1 && <div className="absolute -right-8 -top-8 w-24 h-24 aurora-glow opacity-30"></div>}
-                <button className={cn(
-                  "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors",
-                  index === 1 ? "border-primary" : "border-on-surface-variant/30 group-hover:border-primary"
-                )}>
-                  {index === 1 ? <div className="w-2.5 h-2.5 bg-primary rounded-full animate-pulse"></div> : <Check size={14} className="text-transparent group-hover:text-primary" />}
-                </button>
-                <div className="flex-1 relative z-10">
-                  <h5 className={cn("text-on-surface font-semibold", index === 1 && "text-lg font-bold")}>{task.title}</h5>
-                  <p className={cn("text-on-surface-variant text-sm", index === 1 && "text-primary font-medium")}>
-                    {index === 1 ? `Currently Focusing • ${task.duration}` : `${task.category} • ${task.duration}`}
-                  </p>
-                </div>
-                {index === 1 ? <PlayCircle className="text-primary" fill="currentColor" size={24} /> : <div className="px-3 py-1 bg-surface-container rounded text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">{task.priority}</div>}
+            {tasks.length === 0 ? (
+              <div className="p-12 text-center bg-surface-low rounded-3xl border-2 border-dashed border-on-surface-variant/10">
+                <p className="text-on-surface-variant">No tasks for today. Add one above!</p>
               </div>
-            ))}
+            ) : (
+              tasks.slice(0, 5).map((task) => (
+                <div 
+                  key={task.id} 
+                  className={cn(
+                    "group transition-all p-6 rounded-2xl flex items-center gap-6 bg-surface-low hover:bg-surface-high",
+                    task.completed && "opacity-60"
+                  )}
+                >
+                  <button 
+                    onClick={() => toggleTask(task.id)}
+                    className={cn(
+                      "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors",
+                      task.completed ? "bg-primary border-primary" : "border-on-surface-variant/30 group-hover:border-primary"
+                    )}
+                  >
+                    {task.completed ? <Check size={14} className="text-on-primary" /> : <Check size={14} className="text-transparent group-hover:text-primary" />}
+                  </button>
+                  <div className="flex-1 relative z-10">
+                    <h5 className={cn("text-on-surface font-semibold", task.completed && "line-through")}>{task.title}</h5>
+                    <p className="text-on-surface-variant text-sm">
+                      {task.category} • {task.duration}
+                    </p>
+                  </div>
+                  <div className="px-3 py-1 bg-surface-container rounded text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">{task.priority}</div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
@@ -114,24 +161,32 @@ export default function Dashboard() {
           <div className="bg-surface-low rounded-3xl p-8 space-y-6">
             <h3 className="text-lg font-bold">Insights</h3>
             <div className="space-y-4">
-              <div className="flex items-start gap-4">
-                <div className="mt-1 w-8 h-8 rounded bg-primary-container/20 flex items-center justify-center text-primary">
-                  <Brain size={18} />
+              {insights.length === 0 ? (
+                <div className="flex items-start gap-4">
+                  <div className="mt-1 w-8 h-8 rounded bg-primary-container/20 flex items-center justify-center text-primary">
+                    <Brain size={18} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-on-surface">Getting Started</p>
+                    <p className="text-xs text-on-surface-variant leading-relaxed">Complete more tasks to see personalized productivity insights.</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-on-surface">Peak Productivity</p>
-                  <p className="text-xs text-on-surface-variant leading-relaxed">You are most focused between 9:00 AM and 11:30 AM. Try scheduling deep work then.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-4 pt-4 border-t border-on-surface-variant/10">
-                <div className="mt-1 w-8 h-8 rounded bg-tertiary-container/20 flex items-center justify-center text-tertiary">
-                  <AlertTriangle size={18} />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-on-surface">Burnout Alert</p>
-                  <p className="text-xs text-on-surface-variant leading-relaxed">You've exceeded your daily focus goal by 2 hours. Consider a short walk.</p>
-                </div>
-              </div>
+              ) : (
+                insights.map((insight, idx) => (
+                  <div key={insight.id} className={cn("flex items-start gap-4", idx > 0 && "pt-4 border-t border-on-surface-variant/10")}>
+                    <div className={cn(
+                      "mt-1 w-8 h-8 rounded flex items-center justify-center",
+                      insight.type === 'productivity' ? "bg-primary-container/20 text-primary" : "bg-tertiary-container/20 text-tertiary"
+                    )}>
+                      {insight.type === 'productivity' ? <Brain size={18} /> : <AlertTriangle size={18} />}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-on-surface">{insight.title}</p>
+                      <p className="text-xs text-on-surface-variant leading-relaxed">{insight.description}</p>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 

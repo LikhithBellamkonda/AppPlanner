@@ -1,0 +1,79 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "A productivity task or ritual",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "duration": { "type": "string" },
+        "priority": { "type": "string", "enum": ["High", "Normal", "Urgent", "Routine"] },
+        "completed": { "type": "boolean" },
+        "time": { "type": "string" },
+        "progress": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "completed"]
+    },
+    "Insight": {
+      "title": "Insight",
+      "description": "AI-generated productivity insight",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "type": { "type": "string", "enum": ["productivity", "alert", "recommendation"] },
+        "action": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "description", "type"]
+    },
+    "PerformanceData": {
+      "title": "PerformanceData",
+      "description": "Daily performance metrics",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "day": { "type": "string" },
+        "value": { "type": "number" },
+        "type": { "type": "string", "enum": ["deep", "routine"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "day", "value", "type"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile document"
+    },
+    "/tasks/{taskId}": {
+      "schema": "Task",
+      "description": "Collection of tasks"
+    },
+    "/insights/{insightId}": {
+      "schema": "Insight",
+      "description": "Collection of insights"
+    },
+    "/performance/{performanceId}": {
+      "schema": "PerformanceData",
+      "description": "Collection of performance metrics"
+    }
+  }
+}

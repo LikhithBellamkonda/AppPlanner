@@ -1,10 +1,25 @@
 import React from 'react';
-import { PERFORMANCE_TRENDS } from '../constants';
+import { useFirebase } from '../context/FirebaseContext';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip } from 'recharts';
 import { Bolt, ArrowRight, Lightbulb, TimerOff, Coffee, Repeat, Brain, Activity } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export default function Insights() {
+  const { performance, insights } = useFirebase();
+  
+  // Sort performance data by day if needed, or just use it as is
+  const performanceData = performance.length > 0 ? performance : [
+    { day: 'Mon', value: 40, type: 'routine' },
+    { day: 'Tue', value: 55, type: 'routine' },
+    { day: 'Wed', value: 45, type: 'routine' },
+    { day: 'Thu', value: 75, type: 'routine' },
+    { day: 'Fri', value: 90, type: 'deep' },
+    { day: 'Sat', value: 60, type: 'routine' },
+    { day: 'Sun', value: 65, type: 'routine' },
+  ];
+
+  const avgPerformance = performanceData.reduce((acc, curr) => acc + curr.value, 0) / performanceData.length;
+
   return (
     <div className="space-y-12 pb-24">
       {/* Hero Section */}
@@ -21,7 +36,7 @@ export default function Insights() {
           </div>
           <div>
             <p className="text-sm font-medium text-on-surface-variant">Performance Index</p>
-            <p className="text-2xl font-bold text-on-surface">92.4%</p>
+            <p className="text-2xl font-bold text-on-surface">{avgPerformance.toFixed(1)}%</p>
           </div>
         </div>
       </section>
@@ -37,14 +52,14 @@ export default function Insights() {
           
           <div className="flex-grow mt-8 mb-4 h-48">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={PERFORMANCE_TRENDS}>
+              <BarChart data={performanceData}>
                 <XAxis dataKey="day" hide />
                 <Tooltip 
                   cursor={{ fill: 'rgba(255,255,255,0.05)' }}
                   contentStyle={{ backgroundColor: '#1c211f', border: 'none', borderRadius: '12px' }}
                 />
                 <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                  {PERFORMANCE_TRENDS.map((entry, index) => (
+                  {performanceData.map((entry, index) => (
                     <Cell 
                       key={`cell-${index}`} 
                       fill={entry.type === 'deep' ? '#83d5c5' : 'rgba(173, 205, 197, 0.3)'} 
@@ -76,8 +91,12 @@ export default function Insights() {
         <div className="md:col-span-4 bg-tertiary text-on-primary rounded-3xl p-8 flex flex-col justify-between">
           <div>
             <Lightbulb className="mb-4" size={32} fill="currentColor" />
-            <h3 className="text-2xl font-bold leading-tight mb-4 text-on-primary">You hit your peak at 10:15 AM yesterday.</h3>
-            <p className="opacity-90 leading-relaxed text-sm text-on-primary">AI analysis suggests moving your "Heavy Architecture" tasks 45 minutes earlier to capitalize on your natural cortisol spike.</p>
+            <h3 className="text-2xl font-bold leading-tight mb-4 text-on-primary">
+              {insights.length > 0 ? insights[0].title : "Ready for peak focus?"}
+            </h3>
+            <p className="opacity-90 leading-relaxed text-sm text-on-primary">
+              {insights.length > 0 ? insights[0].description : "Complete your daily tasks to generate cognitive momentum analysis."}
+            </p>
           </div>
           <button className="mt-8 bg-background/20 hover:bg-background/30 text-on-primary font-bold py-3 px-6 rounded-xl active:scale-95 transition-transform text-center">
             Adjust Calendar
@@ -94,7 +113,7 @@ export default function Insights() {
               </div>
               <div>
                 <h4 className="font-bold text-on-surface">Task Switching Fatigue</h4>
-                <p className="text-sm text-on-surface-variant mt-1 leading-relaxed">You switched between 4 different context categories in 60 minutes. This increased your mental load by 22%.</p>
+                <p className="text-sm text-on-surface-variant mt-1 leading-relaxed">You switched between multiple context categories. This increases your mental load.</p>
                 <div className="mt-3 inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary text-[11px] font-bold uppercase tracking-wider">
                   Action: Batch similar tasks
                 </div>
@@ -106,7 +125,7 @@ export default function Insights() {
               </div>
               <div>
                 <h4 className="font-bold text-on-surface">Rest Interval Discipline</h4>
-                <p className="text-sm text-on-surface-variant mt-1 leading-relaxed">Your 2nd focus block exceeded 110 minutes. Research shows concentration drops significantly after 90 minutes.</p>
+                <p className="text-sm text-on-surface-variant mt-1 leading-relaxed">Your focus blocks are exceeding optimal limits. Research shows concentration drops after 90 minutes.</p>
                 <div className="mt-3 inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary text-[11px] font-bold uppercase tracking-wider">
                   Action: Set break reminders
                 </div>
@@ -122,9 +141,19 @@ export default function Insights() {
             <div>
               <h3 className="text-xl font-bold mb-6">Recommended for Tomorrow</h3>
               <div className="space-y-4">
-                <RecommendationItem icon={Repeat} label="Priority One" title="Review Q3 Blueprints" time="08:00 AM" />
-                <RecommendationItem icon={Brain} label="Deep Work" title="System Logic Audit" time="10:30 AM" />
-                <RecommendationItem icon={Activity} label="Recovery" title="Mandatory 15min Walk" time="01:00 PM" />
+                {insights.filter(i => i.type === 'recommendation').length > 0 ? (
+                  insights.filter(i => i.type === 'recommendation').map(rec => (
+                    <div key={rec.id}>
+                      <RecommendationItem icon={Repeat} label="Recommendation" title={rec.title} time={rec.action || "08:00 AM"} />
+                    </div>
+                  ))
+                ) : (
+                  <>
+                    <RecommendationItem icon={Repeat} label="Priority One" title="Review Q3 Blueprints" time="08:00 AM" />
+                    <RecommendationItem icon={Brain} label="Deep Work" title="System Logic Audit" time="10:30 AM" />
+                    <RecommendationItem icon={Activity} label="Recovery" title="Mandatory 15min Walk" time="01:00 PM" />
+                  </>
+                )}
               </div>
             </div>
             <button className="mt-8 w-full bg-primary text-on-primary font-bold py-4 rounded-xl shadow-xl shadow-black/20 active:scale-95 transition-all">

@@ -1,8 +1,14 @@
 import React from 'react';
+import { useFirebase } from '../context/FirebaseContext';
 import { ChevronLeft, ChevronRight, Calendar, GripVertical, Pin, ChevronDown, Plus } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export default function Planner() {
+  const { tasks } = useFirebase();
+  
+  const unassignedTasks = tasks.filter(t => !t.completed);
+  const todayTasks = tasks.filter(t => !t.completed && t.time);
+
   return (
     <div className="space-y-12 pb-24">
       {/* Header */}
@@ -23,13 +29,24 @@ export default function Planner() {
           <div className="bg-surface-low p-6 rounded-3xl flex flex-col gap-6">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold tracking-tight text-on-surface">Unassigned Tasks</h2>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant bg-surface-high px-2 py-1 rounded">4 Pending</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant bg-surface-high px-2 py-1 rounded">{unassignedTasks.length} Pending</span>
             </div>
             
             <div className="flex flex-col gap-4">
-              <UnassignedTaskCard category="Strategic Design" title="Q4 Roadmap Alignment" date="Oct 24" color="primary" />
-              <UnassignedTaskCard category="Optimization" title="Performance Audit" date="Oct 28" color="secondary" />
-              <UnassignedTaskCard category="High Priority" title="Client Presentation" date="Today" color="tertiary" />
+              {unassignedTasks.length > 0 ? (
+                unassignedTasks.map(task => (
+                  <div key={task.id}>
+                    <UnassignedTaskCard 
+                      category={task.category} 
+                      title={task.title} 
+                      date={task.time || "No time"} 
+                      color={task.priority === 'High' ? 'primary' : task.priority === 'Routine' ? 'secondary' : 'tertiary'} 
+                    />
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-on-surface-variant text-center py-4">No unassigned tasks</p>
+              )}
               
               <button className="w-full py-4 border-2 border-dashed border-on-surface-variant/20 rounded-2xl text-sm font-bold text-on-surface-variant hover:bg-surface-high hover:border-primary transition-all flex items-center justify-center gap-2">
                 <Plus size={18} />
@@ -41,7 +58,7 @@ export default function Planner() {
           <div className="bg-primary-container p-6 rounded-3xl text-on-primary overflow-hidden relative">
             <div className="relative z-10">
               <h3 className="text-lg font-bold mb-2">Flow Optimization</h3>
-              <p className="text-on-primary/80 text-sm leading-relaxed mb-6">You have 12 hours of focused work remaining this week. 85% of your energy is currently directed at high-impact pillars.</p>
+              <p className="text-on-primary/80 text-sm leading-relaxed mb-6">You have {unassignedTasks.length * 2} hours of focused work remaining this week. 85% of your energy is currently directed at high-impact pillars.</p>
               <div className="h-2 w-full bg-white/20 rounded-full overflow-hidden">
                 <div className="h-full bg-primary w-[85%] rounded-full"></div>
               </div>
@@ -54,7 +71,7 @@ export default function Planner() {
         <section className="lg:col-span-8 bg-surface-low rounded-3xl p-6 lg:p-8 flex flex-col gap-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <h2 className="text-2xl font-bold tracking-tight text-on-surface">October 2023</h2>
+              <h2 className="text-2xl font-bold tracking-tight text-on-surface">March 2026</h2>
               <div className="flex gap-1">
                 <button className="p-1 hover:bg-surface-high rounded-lg transition-all active:scale-90"><ChevronLeft size={20} /></button>
                 <button className="p-1 hover:bg-surface-high rounded-lg transition-all active:scale-90"><ChevronRight size={20} /></button>
@@ -79,7 +96,7 @@ export default function Planner() {
                   i < 7 && "opacity-40"
                 )}
               >
-                <span className="text-xs font-bold">{i + 24 > 30 ? i - 6 : i + 24}</span>
+                <span className="text-xs font-bold">{i + 19 > 31 ? i - 12 : i + 19}</span>
                 {i === 11 && (
                   <div className="mt-1 flex gap-0.5">
                     <div className="w-1 h-1 bg-primary rounded-full"></div>
@@ -100,26 +117,31 @@ export default function Planner() {
           <div className="mt-auto border-t border-on-surface-variant/10 pt-8">
             <h4 className="text-sm font-bold uppercase tracking-widest text-on-surface-variant mb-6">Today's Timeline</h4>
             <div className="relative space-y-6 before:content-[''] before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-on-surface-variant/10">
-              <div className="flex gap-6 relative">
-                <div className="z-10 w-6 h-6 rounded-full bg-primary-container flex items-center justify-center shadow-sm">
-                  <div className="w-2 h-2 bg-primary rounded-full"></div>
-                </div>
-                <div className="flex-1 bg-surface-high/50 p-4 rounded-2xl">
-                  <div className="flex justify-between items-center mb-1">
-                    <h5 className="font-bold text-sm text-on-surface">Architectural Review</h5>
-                    <span className="text-xs text-on-surface-variant">09:00 - 10:30 AM</span>
+              {todayTasks.length > 0 ? (
+                todayTasks.map(task => (
+                  <div key={task.id} className="flex gap-6 relative">
+                    <div className="z-10 w-6 h-6 rounded-full bg-primary-container flex items-center justify-center shadow-sm">
+                      <div className="w-2 h-2 bg-primary rounded-full"></div>
+                    </div>
+                    <div className="flex-1 bg-surface-high/50 p-4 rounded-2xl">
+                      <div className="flex justify-between items-center mb-1">
+                        <h5 className="font-bold text-sm text-on-surface">{task.title}</h5>
+                        <span className="text-xs text-on-surface-variant">{task.time}</span>
+                      </div>
+                      <p className="text-xs text-on-surface-variant">{task.category}</p>
+                    </div>
                   </div>
-                  <p className="text-xs text-on-surface-variant">Deep focus on system design patterns for Growth V2.</p>
+                ))
+              ) : (
+                <div className="flex gap-6 relative group">
+                  <div className="z-10 w-6 h-6 rounded-full bg-surface-low flex items-center justify-center border-2 border-dashed border-on-surface-variant/30 group-hover:bg-primary/10 group-hover:border-primary transition-all">
+                    <Plus size={10} className="text-on-surface-variant group-hover:text-primary" />
+                  </div>
+                  <div className="flex-1 border-2 border-dashed border-on-surface-variant/10 rounded-2xl p-4 flex items-center justify-center text-on-surface-variant/40 text-xs font-bold uppercase tracking-widest group-hover:bg-primary/5 group-hover:border-primary/20 transition-all cursor-pointer">
+                    No tasks scheduled for today
+                  </div>
                 </div>
-              </div>
-              <div className="flex gap-6 relative group">
-                <div className="z-10 w-6 h-6 rounded-full bg-surface-low flex items-center justify-center border-2 border-dashed border-on-surface-variant/30 group-hover:bg-primary/10 group-hover:border-primary transition-all">
-                  <Plus size={10} className="text-on-surface-variant group-hover:text-primary" />
-                </div>
-                <div className="flex-1 border-2 border-dashed border-on-surface-variant/10 rounded-2xl p-4 flex items-center justify-center text-on-surface-variant/40 text-xs font-bold uppercase tracking-widest group-hover:bg-primary/5 group-hover:border-primary/20 transition-all cursor-pointer">
-                  Drag Assignment Here to Schedule
-                </div>
-              </div>
+              )}
             </div>
           </div>
         </section>
