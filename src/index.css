@@ -1,10 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@200;300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
-@theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Manrope", sans-serif;
-
+:root {
   --color-background: #0f1413;
   --color-surface: #0f1413;
   --color-surface-low: #181d1b;
@@ -24,6 +21,56 @@
   
   --color-on-surface: #dfe3e1;
   --color-on-surface-variant: #bec9c5;
+  --color-error: #ffb4ab;
+}
+
+.light {
+  --color-background: #f4fbf8;
+  --color-surface: #f4fbf8;
+  --color-surface-low: #e9f1ee;
+  --color-surface-high: #dee7e4;
+  --color-surface-highest: #d3ddd9;
+  --color-surface-container: #eef5f2;
+  
+  --color-primary: #006b5e;
+  --color-primary-container: #83d5c5;
+  --color-on-primary: #ffffff;
+  
+  --color-secondary: #314e48;
+  --color-secondary-container: #adcdc5;
+  
+  --color-tertiary: #8f4c36;
+  --color-tertiary-container: #ffb59e;
+  
+  --color-on-surface: #171d1b;
+  --color-on-surface-variant: #3f4946;
+  --color-error: #ba1a1a;
+}
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Manrope", sans-serif;
+
+  --color-background: var(--color-background);
+  --color-surface: var(--color-surface);
+  --color-surface-low: var(--color-surface-low);
+  --color-surface-high: var(--color-surface-high);
+  --color-surface-highest: var(--color-surface-highest);
+  --color-surface-container: var(--color-surface-container);
+  
+  --color-primary: var(--color-primary);
+  --color-primary-container: var(--color-primary-container);
+  --color-on-primary: var(--color-on-primary);
+  
+  --color-secondary: var(--color-secondary);
+  --color-secondary-container: var(--color-secondary-container);
+  
+  --color-tertiary: var(--color-tertiary);
+  --color-tertiary-container: var(--color-tertiary-container);
+  
+  --color-on-surface: var(--color-on-surface);
+  --color-on-surface-variant: var(--color-on-surface-variant);
+  --color-error: var(--color-error);
   
   --radius-xl: 0.75rem;
   --radius-2xl: 1rem;

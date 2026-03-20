@@ -1,11 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useFirebase } from '../context/FirebaseContext';
-import { Timer, TrendingUp, Check, PlayCircle, Brain, AlertTriangle, Plus } from 'lucide-react';
-import { motion } from 'motion/react';
+import { Timer, TrendingUp, Check, PlayCircle, Brain, AlertTriangle, Plus, Trash2, Clock as ClockIcon } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Insight } from '../types';
+
+function Clock() {
+  const [time, setTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="flex flex-col items-start">
+      <div className="flex items-baseline gap-2">
+        <span className="text-4xl font-black tracking-tighter text-on-surface font-mono">
+          {time.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+        </span>
+        <span className="text-xs font-bold text-primary uppercase tracking-widest">24H ARCHITECTURE</span>
+      </div>
+      <p className="text-[10px] uppercase tracking-[0.3em] text-on-surface-variant font-medium">System Synchronized</p>
+    </div>
+  );
+}
 
 export default function Dashboard() {
-  const { user, tasks, insights, toggleTask, addTask } = useFirebase();
+  const { user, tasks, insights, toggleTask, addTask, deleteTask } = useFirebase();
   const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [activeFocusMode, setActiveFocusMode] = useState<string | null>(null);
+  const [selectedInsight, setSelectedInsight] = useState<Insight | null>(null);
   
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
   
@@ -32,9 +56,12 @@ export default function Dashboard() {
     <div className="space-y-12">
       {/* Welcome Section */}
       <section className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div className="space-y-1">
-          <p className="text-xs uppercase tracking-[0.2em] text-on-surface-variant font-medium">{today}</p>
-          <h2 className="text-[3.5rem] font-extrabold leading-none tracking-tight text-on-surface font-display">Hello, {user?.displayName?.split(' ')[0] || 'User'}.</h2>
+        <div className="space-y-4">
+          <div className="space-y-1">
+            <p className="text-xs uppercase tracking-[0.2em] text-on-surface-variant font-medium">{today}</p>
+            <h2 className="text-[3.5rem] font-extrabold leading-none tracking-tight text-on-surface font-display">Hello, {user?.displayName?.split(' ')[0] || 'User'}.</h2>
+          </div>
+          <Clock />
         </div>
         <div className="hidden md:block text-right pb-2">
           <p className="text-on-surface-variant text-sm max-w-xs italic">"The path to clarity begins with a single focused hour."</p>
@@ -126,32 +153,46 @@ export default function Dashboard() {
                 <p className="text-on-surface-variant">No tasks for today. Add one above!</p>
               </div>
             ) : (
-              tasks.slice(0, 5).map((task) => (
-                <div 
-                  key={task.id} 
-                  className={cn(
-                    "group transition-all p-6 rounded-2xl flex items-center gap-6 bg-surface-low hover:bg-surface-high",
-                    task.completed && "opacity-60"
-                  )}
-                >
-                  <button 
-                    onClick={() => toggleTask(task.id)}
+              <AnimatePresence mode="popLayout">
+                {tasks.slice(0, 5).map((task) => (
+                  <motion.div 
+                    key={task.id} 
+                    layout
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
                     className={cn(
-                      "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors",
-                      task.completed ? "bg-primary border-primary" : "border-on-surface-variant/30 group-hover:border-primary"
+                      "group transition-all p-6 rounded-2xl flex items-center gap-6 bg-surface-low hover:bg-surface-high border border-transparent hover:border-primary/10",
+                      task.completed && "opacity-60"
                     )}
                   >
-                    {task.completed ? <Check size={14} className="text-on-primary" /> : <Check size={14} className="text-transparent group-hover:text-primary" />}
-                  </button>
-                  <div className="flex-1 relative z-10">
-                    <h5 className={cn("text-on-surface font-semibold", task.completed && "line-through")}>{task.title}</h5>
-                    <p className="text-on-surface-variant text-sm">
-                      {task.category} • {task.duration}
-                    </p>
-                  </div>
-                  <div className="px-3 py-1 bg-surface-container rounded text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">{task.priority}</div>
-                </div>
-              ))
+                    <button 
+                      onClick={() => toggleTask(task.id)}
+                      className={cn(
+                        "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all active:scale-90",
+                        task.completed ? "bg-primary border-primary" : "border-on-surface-variant/30 group-hover:border-primary"
+                      )}
+                    >
+                      {task.completed ? <Check size={14} className="text-on-primary" /> : <Check size={14} className="text-transparent group-hover:text-primary" />}
+                    </button>
+                    <div className="flex-1 relative z-10">
+                      <h5 className={cn("text-on-surface font-semibold transition-all", task.completed && "line-through")}>{task.title}</h5>
+                      <p className="text-on-surface-variant text-sm">
+                        {task.category} • {task.duration}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="px-3 py-1 bg-surface-container rounded text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">{task.priority}</div>
+                      <button 
+                        onClick={() => deleteTask(task.id)}
+                        className="p-2 text-on-surface-variant hover:text-error hover:bg-error/10 rounded-lg opacity-0 group-hover:opacity-100 transition-all active:scale-90"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             )}
           </div>
         </div>
@@ -173,38 +214,97 @@ export default function Dashboard() {
                 </div>
               ) : (
                 insights.map((insight, idx) => (
-                  <div key={insight.id} className={cn("flex items-start gap-4", idx > 0 && "pt-4 border-t border-on-surface-variant/10")}>
+                  <button 
+                    key={insight.id} 
+                    onClick={() => setSelectedInsight(insight)}
+                    className={cn(
+                      "w-full text-left flex items-start gap-4 group/insight transition-all hover:bg-surface-high p-2 -m-2 rounded-xl", 
+                      idx > 0 && "pt-4 mt-2 border-t border-on-surface-variant/10"
+                    )}
+                  >
                     <div className={cn(
-                      "mt-1 w-8 h-8 rounded flex items-center justify-center",
+                      "mt-1 w-8 h-8 rounded flex items-center justify-center shrink-0 transition-transform group-hover/insight:scale-110",
                       insight.type === 'productivity' ? "bg-primary-container/20 text-primary" : "bg-tertiary-container/20 text-tertiary"
                     )}>
                       {insight.type === 'productivity' ? <Brain size={18} /> : <AlertTriangle size={18} />}
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-on-surface">{insight.title}</p>
-                      <p className="text-xs text-on-surface-variant leading-relaxed">{insight.description}</p>
+                      <p className="text-sm font-semibold text-on-surface group-hover/insight:text-primary transition-colors">{insight.title}</p>
+                      <p className="text-xs text-on-surface-variant leading-relaxed line-clamp-2">{insight.description}</p>
                     </div>
-                  </div>
+                  </button>
                 ))
               )}
             </div>
           </div>
 
-          <div className="relative group rounded-3xl overflow-hidden aspect-video">
+          <div className="relative group rounded-3xl overflow-hidden aspect-video cursor-pointer" onClick={() => setActiveFocusMode('Coffee Shop Ambient')}>
             <img 
-              className="w-full h-full object-cover grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-60 transition-all duration-500" 
+              className={cn(
+                "w-full h-full object-cover transition-all duration-700",
+                activeFocusMode === 'Coffee Shop Ambient' ? "scale-110 grayscale-0 opacity-80" : "grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-60"
+              )} 
               src="https://picsum.photos/seed/office/600/400" 
               alt="Workspace"
               referrerPolicy="no-referrer"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-surface to-transparent"></div>
-            <div className="absolute bottom-4 left-4">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Recommended Setting</p>
-              <h4 className="text-sm font-bold">Deep Work: Coffee Shop Ambient</h4>
+            <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Recommended Setting</p>
+                <h4 className="text-sm font-bold">Deep Work: Coffee Shop Ambient</h4>
+              </div>
+              <div className={cn(
+                "w-10 h-10 rounded-full flex items-center justify-center transition-all",
+                activeFocusMode === 'Coffee Shop Ambient' ? "bg-primary text-on-primary scale-110" : "bg-surface-high text-primary group-hover:scale-110"
+              )}>
+                {activeFocusMode === 'Coffee Shop Ambient' ? <Check size={20} /> : <PlayCircle size={20} />}
+              </div>
             </div>
+            {activeFocusMode === 'Coffee Shop Ambient' && (
+              <div className="absolute top-4 right-4 px-2 py-1 bg-primary text-on-primary text-[8px] font-bold uppercase tracking-widest rounded animate-pulse">
+                Active Session
+              </div>
+            )}
           </div>
         </div>
       </section>
+
+      {/* Insight Modal */}
+      <AnimatePresence>
+        {selectedInsight && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedInsight(null)}
+              className="absolute inset-0 bg-background/80 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative w-full max-w-lg bg-surface-low rounded-[2rem] p-10 border border-on-surface-variant/10 shadow-2xl"
+            >
+              <div className={cn(
+                "w-16 h-16 rounded-2xl flex items-center justify-center mb-8",
+                selectedInsight.type === 'productivity' ? "bg-primary-container/20 text-primary" : "bg-tertiary-container/20 text-tertiary"
+              )}>
+                {selectedInsight.type === 'productivity' ? <Brain size={32} /> : <AlertTriangle size={32} />}
+              </div>
+              <h3 className="text-3xl font-black tracking-tight mb-4">{selectedInsight.title}</h3>
+              <p className="text-on-surface-variant text-lg leading-relaxed mb-8">{selectedInsight.description}</p>
+              <button 
+                onClick={() => setSelectedInsight(null)}
+                className="w-full py-4 bg-primary text-on-primary font-bold rounded-2xl active:scale-95 transition-all"
+              >
+                Acknowledge Blueprint
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

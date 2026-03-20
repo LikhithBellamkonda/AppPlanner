@@ -1,7 +1,9 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, ListTodo, Lightbulb, CalendarDays, Bell, Menu, Video } from 'lucide-react';
+import { NavLink, Link } from 'react-router-dom';
+import { LayoutDashboard, ListTodo, Lightbulb, CalendarDays, Bell, BellOff, Menu, LogOut, Sun, Moon } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useFirebase } from '../context/FirebaseContext';
+import { useTheme } from '../context/ThemeContext';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -10,21 +12,26 @@ function cn(...inputs: ClassValue[]) {
 }
 
 export function TopBar() {
+  const { notificationsEnabled, toggleNotifications, signOut } = useFirebase();
+  const { theme, toggleTheme } = useTheme();
+
   return (
-    <header className="fixed top-0 w-full z-50 bg-background/60 backdrop-blur-xl flex justify-between items-center px-6 py-4">
+    <header className="fixed top-0 w-full z-50 bg-background/60 backdrop-blur-xl flex justify-between items-center px-6 py-4 border-b border-on-surface-variant/5">
       <div className="flex items-center gap-3">
         <button className="text-primary hover:bg-white/5 p-2 rounded-lg active:scale-95 transition-all md:hidden">
           <Menu size={20} />
         </button>
-        <div className="w-8 h-8 rounded-full overflow-hidden bg-surface-high border border-primary/10">
-          <img 
-            className="w-full h-full object-cover" 
-            src="https://picsum.photos/seed/user/100/100" 
-            alt="User avatar"
-            referrerPolicy="no-referrer"
-          />
-        </div>
-        <h1 className="text-xl font-bold tracking-tighter text-primary font-display">Luminance</h1>
+        <Link to="/" className="flex items-center gap-3 group">
+          <div className="w-8 h-8 rounded-full overflow-hidden bg-surface-high border border-primary/10 group-hover:border-primary/40 transition-all">
+            <img 
+              className="w-full h-full object-cover" 
+              src="https://picsum.photos/seed/user/100/100" 
+              alt="User avatar"
+              referrerPolicy="no-referrer"
+            />
+          </div>
+          <h1 className="text-xl font-bold tracking-tighter text-primary font-display group-hover:scale-105 transition-transform">Luminance</h1>
+        </Link>
       </div>
       
       <div className="hidden md:flex items-center gap-8 mr-8">
@@ -32,12 +39,36 @@ export function TopBar() {
         <NavLink to="/activities" className={({ isActive }) => cn("text-sm font-medium transition-colors", isActive ? "text-primary" : "text-on-surface-variant hover:text-primary")}>Activities</NavLink>
         <NavLink to="/insights" className={({ isActive }) => cn("text-sm font-medium transition-colors", isActive ? "text-primary" : "text-on-surface-variant hover:text-primary")}>Insights</NavLink>
         <NavLink to="/planner" className={({ isActive }) => cn("text-sm font-medium transition-colors", isActive ? "text-primary" : "text-on-surface-variant hover:text-primary")}>Planner</NavLink>
-        <NavLink to="/frames-to-video" className={({ isActive }) => cn("text-sm font-medium transition-colors", isActive ? "text-primary" : "text-on-surface-variant hover:text-primary")}>Video</NavLink>
       </div>
 
-      <button className="text-primary hover:opacity-80 transition-opacity active:scale-95">
-        <Bell size={20} />
-      </button>
+      <div className="flex items-center gap-2">
+        <button 
+          onClick={toggleTheme}
+          className="text-on-surface-variant hover:text-primary hover:bg-white/5 p-2 rounded-full transition-all active:scale-95"
+          title={theme === 'dark' ? "Switch to Light Mode" : "Switch to Dark Mode"}
+        >
+          {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+        </button>
+
+        <button 
+          onClick={toggleNotifications}
+          className={cn(
+            "transition-all active:scale-95 p-2 rounded-full",
+            notificationsEnabled ? "text-primary bg-primary/10" : "text-on-surface-variant hover:bg-white/5"
+          )}
+          title={notificationsEnabled ? "Disable notifications" : "Enable notifications"}
+        >
+          {notificationsEnabled ? <Bell size={20} /> : <BellOff size={20} />}
+        </button>
+        
+        <button 
+          onClick={signOut}
+          className="text-on-surface-variant hover:text-error hover:bg-error/10 p-2 rounded-full transition-all active:scale-95"
+          title="Sign Out"
+        >
+          <LogOut size={20} />
+        </button>
+      </div>
     </header>
   );
 }
@@ -48,7 +79,6 @@ export function BottomNav() {
     { to: '/activities', icon: ListTodo, label: 'Activities' },
     { to: '/insights', icon: Lightbulb, label: 'Insights' },
     { to: '/planner', icon: CalendarDays, label: 'Planner' },
-    { to: '/frames-to-video', icon: Video, label: 'Video' },
   ];
 
   return (
